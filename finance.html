@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Finance Calculator</title>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --btn: #111827;
+      --btnfg: #ffffff;
+      --card: #f9fafb;
+      --danger: #b91c1c;
+      --ok: #15803d;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 8px 0;
+    }
+
+    p.help {
+      margin: 0 0 16px 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    @media (min-width: 720px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--fg);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      background: var(--btn);
+      color: var(--btnfg);
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--fg);
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+
+    .radio {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .radio strong {
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: 6px;
+    }
+
+    .status {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px dashed var(--border);
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .footer {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .footer code { font-size: 11px; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Finance Calculator</h1>
+      <p class="help">
+        Enter any <strong>four</strong> values and click the button to compute the fifth.
+        Use negative numbers for cash outflows (e.g., payments), positive for inflows.
+      </p>
+
+      <form name="calculator" autocomplete="off">
+        <div class="grid">
+          <div class="row">
+            <label>
+              Present Value (PV)
+              <span class="hint">e.g., loan amount</span>
+            </label>
+            <input name="pv" type="text" value="0.00" />
+            <button type="button" onclick="fincalc.comp(this.form,'pv')">Compute PV</button>
+          </div>
+
+          <div class="row">
+            <label>
+              Future Value (FV)
+              <span class="hint">e.g., ending balance</span>
+            </label>
+            <input name="fv" type="text" value="0.00" />
+            <button type="button" onclick="fincalc.comp(this.form,'fv')">Compute FV</button>
+          </div>
+
+          <div class="row">
+            <label>
+              Number of Periods (N)
+              <span class="hint">total payments/periods</span>
+            </label>
+            <input name="np" type="text" value="120.00" />
+            <button type="button" onclick="fincalc.comp(this.form,'np')">Compute N</button>
+          </div>
+
+          <div class="row">
+            <label>
+              Payment (PMT)
+              <span class="hint">per period</span>
+            </label>
+            <input name="pmt" type="text" value="-100.00" />
+            <button type="button" onclick="fincalc.comp(this.form,'pmt')">Compute PMT</button>
+          </div>
+
+          <div class="row" style="grid-column: 1 / -1;">
+            <label>
+              Interest Rate (IR %)
+              <span class="hint">per period (percent)</span>
+            </label>
+            <input name="ir" type="text" value="1.000000" />
+            <div class="actions">
+              <button type="button" onclick="fincalc.comp(this.form,'ir')">Compute IR</button>
+              <button type="button" class="secondary" onclick="fincalc.clear(this.form)">Reset</button>
+            </div>
+          </div>
+
+          <div class="radio" style="grid-column: 1 / -1;">
+            <strong>Payment timing:</strong>
+            <label><input type="radio" name="pb" value="begin" /> Beginning of period</label>
+            <label><input type="radio" name="pb" value="end" checked /> End of period</label>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+        <div class="footer">
+          Based on GPL-licensed code (© 2024 Paul Lutus). Keep this notice if you redistribute.
+          Querystring supported: <code>?pv=...&fv=...&np=...&pmt=...&ir=...&pb=true|false</code>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+/***************************************************************************
+ *   Copyright (C) 2024, Paul Lutus                                        *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+
+// Utility function to add an event listener
+function addEvent(o, e, f) {
+  if (o.addEventListener) {
+    o.addEventListener(e, f, false);
+    return true;
+  }
+  else if (o.attachEvent) {
+    return o.attachEvent("on" + e, f);
+  }
+  else {
+    return false;
+  }
+}
+
+var fincalc = fincalc || {}
+
+fincalc.funct_array = new Array("pv", "fv", "np", "pmt", "ir");
+fincalc.completed = false;
+
+fincalc.x = 2 / 3;
+fincalc.strx = fincalc.x.toString();
+// discover locale
+fincalc.loc_us = (fincalc.strx.indexOf(".") >= 0);
+fincalc.delim = (fincalc.loc_us) ? "," : ".";
+fincalc.radix = (fincalc.loc_us) ? "." : ",";
+// set display decimal places
+fincalc.places = 2;
+
+fincalc.get_cookie = function (path) {
+  var result = "";
+  var a = document.cookie.indexOf(path);
+  if (a != -1) {
+    a += path.length + 1;
+    var b = document.cookie.indexOf(";", a);
+    if (b == -1) {
+      b = document.cookie.length;
+    }
+    var result = unescape(document.cookie.substring(a, b));
+  }
+  return result;
+}
+
+fincalc.read_cookie = function () {
+  var cookie = fincalc.get_cookie(window.location.pathname);
+  if (cookie != '') {
+    var array = cookie.split("|");
+    for (var i = 0; i < array.length; i++) {
+      var s = "document.calculator." + array[i];
+      eval(s);
+    }
+  }
+}
+
+fincalc.read_com_args = function () {
+
+  var hash = new Object();
+  // preset undefined values
+  for (var i in fincalc.funct_array) {
+    hash[fincalc.funct_array[i]] = false;
+  }
+  var temp = window.location.search.split("?");
+  if (temp.length > 1) {
+    var array = temp[1].split("&");
+    var n = 0;
+    for (var i in array) {
+      var arg = unescape(array[i]);
+      var pair = arg.split("=");
+      if (pair[0] in hash) {
+        // set value defined
+        hash[pair[0]] = true;
+        var value = pair[1].replace(",", "");
+        var s = "document.calculator." + pair[0] + ".value = " + value;
+        eval(s);
+        n++;
+      }
+      // special case: pb (payment at beginning)
+      else if (pair[0] == "pb") {
+        var pb = (pair[1] == "true") ? 0 : 1;
+        var s = "document.calculator.pb[" + pb + "].checked = true";
+        eval(s);
+      }
+    }
+    // if four values are defined,
+    // compute the fifth
+    if (n == 4) {
+      for (var str in hash) {
+        // is this value undefined?
+        if (!hash[str]) {
+          // compute it
+          fincalc.comp(document.calculator, str);
+        }
+      }
+    }
+  }
+}
+
+fincalc.read_values = function () {
+  fincalc.read_cookie();
+  fincalc.set_status(false);
+  fincalc.read_com_args();
+}
+
+fincalc.write_cookie = function () {
+  var cookie = new Array();
+  for (i = 0; i < fincalc.funct_array.length; i++) {
+    var v = fincalc.funct_array[i];
+    cookie[i] = v + ".value=\"" + eval("document.calculator." + v + ".value") + "\"";
+  }
+  pb = document.calculator.pb[0].checked ? 0 : 1;
+  cookie[fincalc.funct_array.length] = "pb[" + pb + "].checked = true";
+  cookie = escape(cookie.join("|"));
+  var duration = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
+  document.cookie = window.location.pathname + "=" + cookie + "; expires=" + duration.toGMTString();
+}
+
+fincalc.value_changed = function (source) {
+  var col = (source.value.match(/^\s*-/)) ? "red" : "black";
+  source.style.color = col;
+  fincalc.set_status(false);
+}
+
+// Calculator functions
+
+fincalc.set_status = function (val) {
+  fincalc.completed = val;
+  var s = "";
+  if (fincalc.completed) {
+    s = "<span style=\"color:green\">Computation complete.</span>";
+  }
+  else {
+    s = "<span style=\"color:red\">Computation incomplete. Compute a result or enter more values.</span>";
+  }
+  document.getElementById("status").innerHTML = "<center>" + s + "</center>";
+}
+
+fincalc.num_format = function (v, dest, places) { // format numbers with "places" digits
+  var x = Math.abs(v);
+  var m = Math.pow(10, places);
+  var x = Math.floor(x * m + .5);
+  var i = places;
+  var n = 16;
+  var sx = "";
+  while (n-- > 0 && (((i--) >= 0) || (x > 0))) {
+    if (i < -1) {
+      sx = (((i + 1) % 3 == 0) ? fincalc.delim : "") + sx;
+    }
+    sx = (x % 10) + sx;
+    x = Math.floor(x / 10);
+    if (i == 0) {
+      sx = fincalc.radix + sx;
+    }
+  }
+  if (v < 0) {
+    sx = "-" + sx;
+  }
+  dest.value = sx;
+  // deal with Not-A-Number, replace with infinity character
+  if (dest.value == "NaN.NaNNaN" || dest.value == "∞") {
+    dest.value = "∞";
+    dest.style.fontSize = "250%";
+  }
+  else {
+    dest.style.fontSize = "100%";
+  }
+  // adjust for possible changed font size
+  dest.style.width = "253px";
+  dest.style.height = "19px";
+  fincalc.set_cell_color(dest, v);
+}
+
+fincalc.set_cell_color = function (cell, v) {
+  cell.style.color = (v < 0) ? "red" : "black";
+}
+
+fincalc.parse_cell = function (cell) {
+  var v = cell.value.replace(new RegExp(fincalc.delim, 'g'), "");
+  var y = parseFloat(v);
+  if (isNaN(y)) {
+    y = 0;
+    cell.value = '0.00';
+  }
+  fincalc.set_cell_color(cell, y);
+  return y;
+}
+
+fincalc.comp = function (form, com) { // general entry point for all cases
+  fincalc.completed = false;
+
+  // get payment type
+  // beginning = 1
+  // end = 0
+  var pb = form.pb[0].checked ? 1 : 0;
+  // convert all entry fields into variables
+  var pv = fincalc.parse_cell(form.pv);
+  var fv = fincalc.parse_cell(form.fv);
+  var np = fincalc.parse_cell(form.np);
+  var pmt = fincalc.parse_cell(form.pmt);
+  if (form.ir.value == "") {
+    form.ir.value = "1";
+  }
+  var ir = fincalc.parse_cell(form.ir);
+  // we're expressing the rate as a percentage, so
+  ir /= 100.0;
+  // test and compute all cases
+  switch (com) {
+    case 'pv':
+      pv = fincalc.comp_pv(np, ir, pmt, fv, pb);
+      fincalc.completed = true;
+      break;
+    case 'pt':
+    case 'fv':
+      fv = fincalc.comp_fv(np, ir, pmt, pv, pb);
+      fincalc.completed = true;
+      break;
+    case 'np':
+      np = fincalc.comp_np(ir, pmt, fv, pv, pb);
+      fincalc.completed = true;
+      break;
+    case 'pmt':
+      pmt = fincalc.comp_pmt(np, ir, fv, pv, pb);
+      fincalc.completed = true;
+      break;
+    case 'ir':
+      ir = fincalc.comp_ir(np, ir, pmt, pv, fv, pb);
+      fincalc.completed = true;
+      break;
+    case 'loc':
+      break;
+  }
+  fincalc.write_display(form, pv, fv, np, pmt, ir);
+  fincalc.set_status(fincalc.completed);
+} // function comp
+
+fincalc.write_display = function (form, pv, fv, np, pmt, ir) {
+  fincalc.num_format(pv, form.pv, fincalc.places);
+  fincalc.num_format(fv, form.fv, fincalc.places);
+  fincalc.num_format(np, form.np, fincalc.places);
+  fincalc.num_format(pmt, form.pmt, fincalc.places);
+  fincalc.num_format(ir * 100.0, form.ir, 6);
+  return true;
+}
+
+fincalc.comp_pv = function (np, ir, pmt, fv, pb) {
+  var pv;
+  if (ir == 0.0) {
+    pv = - fv - np * pmt;
+  }
+  else {
+    var qa = Math.pow(1 + ir, -np);
+    var qb = Math.pow(1 + ir, np);
+    pv = - qa * (fv + ((-1 + qb) * pmt * (1 + ir * pb)) / ir);
+  }
+  return pv;
+}
+
+fincalc.comp_fv = function (np, ir, pmt, pv, pb) {
+  var fv;
+  if (ir == 0.0) {
+    fv = - np * pmt - pv;
+  }
+  else {
+    var q = Math.pow(1 + ir, np);
+    fv = - q * pv - (((-1 + q) * pmt * (1 + ir * pb)) / ir);
+  }
+  return fv;
+}
+
+fincalc.comp_pmt = function (np, ir, fv, pv, pb) {
+  var pmt = 0;
+  if (ir == 0.0) {
+    if (np != 0.0) {
+      pmt = - (fv + pv) / np;
+    }
+  }
+  else {
+    var q = Math.pow(1 + ir, np);
+    pmt = - (ir * (fv + (q * pv))) / ((-1 + q) * (1 + ir * pb));
+  }
+  return pmt;
+}
+
+fincalc.comp_np = function (ir, pmt, fv, pv, pb) {
+  var np = 0;
+  if (ir == 0.0) {
+    if (pmt != 0.0) {
+      np = - (fv + pv) / pmt;
+    }
+  }
+  else { // ir != 0
+    var terma = -fv * ir + pmt + ir * pmt * pb;
+    var termb = pmt + ir * pv + ir * pmt * pb;
+    np = Math.log(terma / termb) / Math.log(1 + ir);
+  }
+  return np;
+}
+
+fincalc.comp_ir = function (np, ir, pmt, pv, fv, pb) {
+  var tir = ir; // default value
+  var maxtries = 400;
+  var val = 0;
+  var oldval = 0;
+  var delta = 0;
+  var olddelta = 0;
+  if ((fv == 0.0) && (pv == 0.0)) {
+    tir = (pmt < 0) ? -1.0 : 1.0;
+  }
+  else {
+    var k = 0;
+    var solved = false;
+    do {
+      var i = 0;
+      var j = 0;
+      var guess = (k == 0) ? ir : -ir;
+      var gd = guess * .5;
+      if (gd == 0.0)
+        gd = 1.0;
+      do {
+        guess += gd;
+        if (guess != 0.0) {
+          val = fincalc.comp_fv(np, guess, pmt, pv, pb);
+          delta = Math.abs(val - fv);
+        }
+        if (i > 0) { // old values not set on i == 0
+          j++;
+          //test match of absolute values and rate of change
+          if ((Math.abs(val - oldval) > 1e-8) || (delta > 1e-8)) {
+            j = 0;
+          }
+          if (delta > olddelta) {
+            gd *= -.5;
+          }
+        }
+        oldval = val;
+        olddelta = delta;
+      }
+      while ((i++ < maxtries) && (j < 3));
+      if (i < maxtries) {
+        tir = guess;
+        solved = true;
+      }
+    }
+    while ((k++ < 2) && !solved);
+    if (!solved) {
+      alert("Cannot compute interest for this combination of values -- try different values, or enter an approximate expected interest rate and try again.");
+    }
+  }
+  return tir;
+}
+
+fincalc.clear = function (form) {
+  form.pb[1].checked = true;
+  fincalc.write_display(form, 0, 0, 120, -100, .01);
+  fincalc.set_status(false);
+}
+
+addEvent(window, "load", fincalc.read_values);
+addEvent(window, "unload", fincalc.write_cookie);
+  </script>
+</body>
+</html>
